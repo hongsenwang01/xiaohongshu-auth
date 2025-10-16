@@ -1,8 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { ArrowLeft } from "lucide-react"
 import type { OrderData, PaymentMethod } from "@/app/purchase/page"
 import { cn } from "@/lib/utils"
@@ -46,13 +49,13 @@ const paymentMethods = [
   {
     id: "wechat" as PaymentMethod,
     name: "微信支付",
-    icon: "💚",
+    icon: "/Wexin.svg",
     description: "使用微信扫码支付",
   },
   {
     id: "alipay" as PaymentMethod,
     name: "支付宝",
-    icon: "💙",
+    icon: "/Zhifubao.svg",
     description: "使用支付宝扫码支付",
   },
 ]
@@ -65,6 +68,7 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
   const [paymentError, setPaymentError] = useState<string>("")
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const [showAbandonConfirm, setShowAbandonConfirm] = useState(false)
 
   const clearPolling = () => {
     if (pollingIntervalRef.current) {
@@ -88,13 +92,12 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
       const response = await fetch(`https://oyosyatukogk.sealoshzh.site/api/wechat/pay/query?outTradeNo=${tradeNo}`)
 
       if (!response.ok) {
-        console.error("[v0] Payment query failed:", response.statusText)
+        console.error("Payment query failed:", response.statusText)
         return
       }
 
       const data: PaymentQueryResponse = await response.json()
 
-      console.log("[v0] Payment status:", data.status)
 
       if (data.status === "SUCCESS") {
         // 支付成功，停止轮询
@@ -112,7 +115,7 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
       }
       // PENDING 状态继续轮询
     } catch (error) {
-      console.error("[v0] Payment query error:", error)
+      console.error("Payment query error:", error)
     }
   }
 
@@ -198,10 +201,46 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
         }, 3000)
       }
     } catch (error) {
-      console.error("[v0] Payment error:", error)
+      console.error("Payment error:", error)
       setPaymentError(error instanceof Error ? error.message : "支付失败，请重试")
       setIsProcessing(false)
       setShowQRCode(false)
+    }
+  }
+
+  const handleCloseQRCode = async () => {
+    try {
+      // 如果有订单号，调用取消订单接口
+      if (outTradeNo) {
+        
+        const cancelUrl = `https://oyosyatukogk.sealoshzh.site/api/wechat/pay/cancel?outTradeNo=${encodeURIComponent(outTradeNo)}`
+
+        
+        const cancelResponse = await fetch(cancelUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+
+        if (!cancelResponse.ok) {
+          console.warn("Cancel order returned non-ok status:", cancelResponse.status, cancelResponse.statusText)
+        }
+
+        const cancelData = await cancelResponse.json()
+      }
+    } catch (error) {
+      // 捕获任何错误但不中断流程
+      console.error("Cancel order error:", error instanceof Error ? error.message : error)
+      if (error instanceof Error) {
+        console.error("Error stack:", error.stack)
+      }
+    } finally {
+      // 不管接口调用成功或失败，都关闭相关状态
+      setShowQRCode(false)
+      setPaymentError("")
+      setIsProcessing(false)
+      clearPolling()
     }
   }
 
@@ -273,7 +312,9 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
                     onClick={() => handleSelectPayment(method.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="text-3xl">{method.icon}</div>
+                      <div className="flex items-center justify-center">
+                        <Image src={method.icon} alt={method.name} width={32} height={32} />
+                      </div>
                       <div className="flex-1">
                         <div className="font-semibold text-foreground">{method.name}</div>
                         <div className="text-sm text-muted-foreground">{method.description}</div>
@@ -300,67 +341,96 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
 
           <AnimatePresence>
             {showQRCode && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                transition={{ duration: 0.3 }}
-                className="rounded-lg border border-border bg-card p-6"
+              <Dialog
+                open={showQRCode}
+                onOpenChange={(open) => {
+                  if (!open && isProcessing) {
+                    // 用户尝试关闭弹窗，显示确认对话框
+                    setShowAbandonConfirm(true)
+                  } else if (!open) {
+                    // 没有在处理中，直接关闭
+                    setShowQRCode(false)
+                  }
+                }}
               >
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="text-center">
-                    <h4 className="font-semibold text-foreground mb-1">
-                      {orderData.paymentMethod === "wechat" ? "微信支付" : "支付宝"}扫码支付
-                    </h4>
-                    <p className="text-sm text-muted-foreground">请使用手机扫描下方二维码完成支付</p>
-                    {outTradeNo && <p className="text-xs text-muted-foreground mt-1">订单号: {outTradeNo}</p>}
-                  </div>
+                <DialogContent className="p-0 w-full max-w-md sm:max-w-lg md:max-w-xl">
+                  <DialogTitle className="sr-only">
+                    {orderData.paymentMethod === "wechat" ? "微信支付" : "支付宝"}扫码支付
+                  </DialogTitle>
+                  <DialogDescription className="text-center text-sm text-muted-foreground mt-4">
+                    请使用手机扫描下方二维码完成支付
+                  </DialogDescription>
+                  <div className="flex flex-col items-center space-y-6 p-8">
+                    <div className="text-center space-y-2">
+                      <h4 className="text-xl font-semibold text-foreground">
+                        {orderData.paymentMethod === "wechat" ? "微信支付" : "支付宝"}扫码支付
+                      </h4>
+                      {outTradeNo && <p className="text-xs text-muted-foreground">订单号: {outTradeNo}</p>}
+                    </div>
 
-                  <div className="relative">
-                    <div className="rounded-lg bg-white p-4 flex items-center justify-center">
-                      {isProcessing && !qrCodeImage ? (
-                        <div className="h-48 w-48 flex items-center justify-center">
-                          <div className="text-center space-y-2">
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                              className="h-8 w-8 border-4 border-accent border-t-transparent rounded-full mx-auto"
-                            />
-                            <p className="text-sm text-muted-foreground">生成二维码中...</p>
+                    <div className="relative w-full flex justify-center">
+                      <div className="rounded-lg bg-white p-6 flex items-center justify-center">
+                        {isProcessing && !qrCodeImage ? (
+                          <div className="h-56 w-56 flex items-center justify-center">
+                            <div className="text-center space-y-3">
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                                className="h-8 w-8 border-4 border-accent border-t-transparent rounded-full mx-auto"
+                              />
+                              <p className="text-sm text-muted-foreground">生成二维码中...</p>
+                            </div>
                           </div>
-                        </div>
-                      ) : qrCodeImage ? (
-                        <motion.img
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ duration: 0.3 }}
-                          src={qrCodeImage}
-                          alt="支付二维码"
-                          className="h-48 w-48"
-                        />
-                      ) : (
-                        <div className="h-48 w-48 rounded-lg bg-muted flex items-center justify-center">
-                          <div className="text-center space-y-2">
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                              className="h-8 w-8 border-4 border-accent border-t-transparent rounded-full mx-auto"
-                            />
-                            <p className="text-sm text-muted-foreground">处理中...</p>
+                        ) : qrCodeImage ? (
+                          <motion.img
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ duration: 0.3 }}
+                            src={qrCodeImage}
+                            alt="支付二维码"
+                            className="h-56 w-56"
+                          />
+                        ) : (
+                          <div className="h-56 w-56 rounded-lg bg-muted flex items-center justify-center">
+                            <div className="text-center space-y-3">
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                                className="h-8 w-8 border-4 border-accent border-t-transparent rounded-full mx-auto"
+                              />
+                              <p className="text-sm text-muted-foreground">处理中...</p>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-center space-y-1 pt-2">
+                      <p className="text-2xl font-bold text-foreground">¥{orderData.totalPrice}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isProcessing ? "等待支付..." : "支付完成后将自动跳转"}
+                      </p>
                     </div>
                   </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </AnimatePresence>
 
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-foreground">¥{orderData.totalPrice}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {isProcessing ? "等待支付..." : "支付完成后将自动跳转"}
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
+          <AnimatePresence>
+            {showAbandonConfirm && (
+              <AlertDialog open={showAbandonConfirm} onOpenChange={setShowAbandonConfirm}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>确定放弃支付吗？</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      放弃支付将导致订单失效，您确定要继续吗？
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogAction onClick={handleCloseQRCode}>确定</AlertDialogAction>
+                  <AlertDialogCancel onClick={() => setShowAbandonConfirm(false)}>取消</AlertDialogCancel>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </AnimatePresence>
         </div>
