@@ -17,8 +17,8 @@ interface DurationStepProps {
 const durations = [1, 3, 6, 12]
 
 const licensePrices = {
-  standard: 0.1,
-  premium: 0.2,
+  standard: 15,
+  premium: 25,
 }
 
 export function DurationStep({ orderData, updateOrderData, onNext, onBack }: DurationStepProps) {

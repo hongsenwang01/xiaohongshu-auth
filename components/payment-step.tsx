@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { ArrowLeft } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { OrderData, PaymentMethod } from "@/app/purchase/page"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
@@ -98,12 +99,50 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
 
       const data: PaymentQueryResponse = await response.json()
 
-
       if (data.status === "SUCCESS") {
         // 支付成功，停止轮询
         clearPolling()
-        const code = `XHS-${Math.random().toString(36).substring(2, 10).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`
-        setAuthCode(code)
+        
+        try {
+          // 调用生成授权码接口
+          const licenseTypeMap = {
+            standard: "STANDARD",
+            premium: "PREMIUM",
+          }
+          
+          const licenseType = licenseTypeMap[orderData.licenseType as keyof typeof licenseTypeMap]
+          const generateResponse = await fetch("/api/license/generate", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              licenseType,
+              months: orderData.duration,
+              notes: `Order: ${tradeNo}`,
+            }),
+          })
+
+          if (!generateResponse.ok) {
+            console.error("[v0] Generate license failed:", generateResponse.statusText)
+            throw new Error("生成授权码失败")
+          }
+
+          const generateData = await generateResponse.json()
+          console.log("[v0] Generate license response:", generateData)
+
+          if (generateData.success && generateData.licenseCode) {
+            setAuthCode(generateData.licenseCode)
+          } else {
+            throw new Error(generateData.message || "生成授权码失败")
+          }
+        } catch (error) {
+          console.error("[v0] Generate license error:", error)
+          // 即使生成授权码失败，也使用备用授权码
+          const code = `XHS-${Math.random().toString(36).substring(2, 10).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`
+          setAuthCode(code)
+        }
+
         setIsProcessing(false)
         onNext()
       } else if (data.status === "FAILED") {
@@ -295,34 +334,52 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
           >
             <h3 className="font-semibold text-foreground mb-4">选择支付方式</h3>
             <div className="grid gap-4 md:grid-cols-2">
-              {paymentMethods.map((method, index) => (
-                <motion.div
-                  key={method.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
-                  whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Card
-                    className={cn(
-                      "cursor-pointer p-4 transition-all hover:border-accent hover:shadow-md",
-                      orderData.paymentMethod === method.id && "border-accent ring-2 ring-accent shadow-md",
-                    )}
-                    onClick={() => handleSelectPayment(method.id)}
+              {paymentMethods.map((method, index) => {
+                const isAlipayDisabled = method.id === "alipay"
+                
+                return (
+                  <motion.div
+                    key={method.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.2 + index * 0.1 }}
+                    whileHover={!isAlipayDisabled ? { scale: 1.02, transition: { duration: 0.2 } } : {}}
+                    whileTap={!isAlipayDisabled ? { scale: 0.98 } : {}}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center">
-                        <Image src={method.icon} alt={method.name} width={32} height={32} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-semibold text-foreground">{method.name}</div>
-                        <div className="text-sm text-muted-foreground">{method.description}</div>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Card
+                            className={cn(
+                              "p-4 transition-all",
+                              isAlipayDisabled
+                                ? "cursor-not-allowed opacity-50 border-border"
+                                : "cursor-pointer hover:border-accent hover:shadow-md",
+                              orderData.paymentMethod === method.id && "border-accent ring-2 ring-accent shadow-md",
+                            )}
+                            onClick={() => !isAlipayDisabled && handleSelectPayment(method.id)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center justify-center">
+                                <Image src={method.icon} alt={method.name} width={32} height={32} />
+                              </div>
+                              <div className="flex-1">
+                                <div className="font-semibold text-foreground">{method.name}</div>
+                                <div className="text-sm text-muted-foreground">{method.description}</div>
+                              </div>
+                            </div>
+                          </Card>
+                        </TooltipTrigger>
+                        {isAlipayDisabled && (
+                          <TooltipContent side="top" className="bg-gray-900 text-white">
+                            支付宝支付暂时无法使用，请使用微信支付
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </TooltipProvider>
+                  </motion.div>
+                )
+              })}
             </div>
           </motion.div>
 

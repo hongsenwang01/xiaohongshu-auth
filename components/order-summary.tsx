@@ -12,8 +12,8 @@ const licenseNames = {
 }
 
 const licensePrices = {
-  standard: 0.1,
-  premium: 0.2,
+  standard: 15,
+  premium: 25,
 }
 
 export function OrderSummary({ orderData, currentStep }: OrderSummaryProps) {
