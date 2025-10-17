@@ -1,16 +1,21 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { PurchaseRecords } from "@/components/purchase-records"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
+import dynamic from "next/dynamic"
+
+// 动态导入 PurchaseRecords 组件，禁用 SSR 以避免 hydration 错误
+const PurchaseRecords = dynamic(() => import("@/components/purchase-records").then(mod => ({ default: mod.PurchaseRecords })), {
+  ssr: false,
+})
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <header className="py-6">
         <div className="container mx-auto px-4">
-          <h1 className="text-xl font-semibold text-foreground">小红书授权码管理系统</h1>
+          <h1 className="text-xl font-semibold text-foreground">小红书助手插件授权码管理</h1>
         </div>
       </header>
 
@@ -61,7 +66,7 @@ export default function Home() {
                   <div className="pt-4">
                     <Link href="/purchase">
                       <Button size="lg" className="group gap-2 text-base">
-                        立即购买授权码
+                        立即获取授权码
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </Button>
                     </Link>
@@ -113,7 +118,7 @@ export default function Home() {
 
       <footer className="py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground/50">
-          © 2025 小红书授权码管理系统
+          © 2025 小红书助手插件授权码管理
         </div>
       </footer>
     </div>

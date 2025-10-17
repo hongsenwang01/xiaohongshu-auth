@@ -21,6 +21,7 @@ const licenseTypes = [
     accounts: 3,
     price: 15,
     features: ["同时绑定3个小红书账号", "数据分析功能", "每月更新维护"],
+    popular: true,
   },
   {
     id: "premium" as LicenseType,
@@ -29,7 +30,6 @@ const licenseTypes = [
     accounts: 10,
     price: 25,
     features: ["同时绑定10个小红书账号", "数据分析功能", "优先客户支持"],
-    popular: true,
   },
 ]
 

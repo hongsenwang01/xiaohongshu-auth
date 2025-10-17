@@ -18,7 +18,6 @@ const licensePrices = {
 
 export function OrderSummary({ orderData, currentStep }: OrderSummaryProps) {
   const basePrice = orderData.licenseType ? licensePrices[orderData.licenseType as keyof typeof licensePrices] : 0
-  const totalPrice = basePrice * orderData.duration
 
   return (
     <Card className="p-6">
@@ -57,7 +56,7 @@ export function OrderSummary({ orderData, currentStep }: OrderSummaryProps) {
         <div className="border-t border-border pt-4">
           <div className="flex justify-between">
             <span className="font-semibold text-foreground">总计</span>
-            <span className="text-2xl font-bold text-foreground">¥{totalPrice}</span>
+            <span className="text-2xl font-bold text-foreground">¥{orderData.totalPrice.toFixed(2)}</span>
           </div>
         </div>
       </div>

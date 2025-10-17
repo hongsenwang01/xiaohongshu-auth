@@ -67,7 +67,7 @@ export default function PurchasePage() {
                 返回首页
               </Button>
             </Link>
-            <h1 className="text-xl font-semibold text-foreground">小红书授权码管理系统</h1>
+            <h1 className="text-xl font-semibold text-foreground">小红书助手插件授权码管理</h1>
           </div>
         </div>
       </header>

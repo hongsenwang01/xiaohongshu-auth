@@ -21,10 +21,18 @@ const licensePrices = {
   premium: 25,
 }
 
+// 计算折扣系数
+const getDiscountRate = (months: number): number => {
+  if (months === 6) return 0.95 // 6个月95折
+  if (months === 12) return 0.9 // 12个月9折
+  return 1.0 // 无折扣
+}
+
 export function DurationStep({ orderData, updateOrderData, onNext, onBack }: DurationStepProps) {
   const handleSelectDuration = (months: number) => {
     const basePrice = orderData.licenseType ? licensePrices[orderData.licenseType] : 0
-    const totalPrice = Number.parseFloat((basePrice * months).toFixed(2))
+    const discountRate = getDiscountRate(months)
+    const totalPrice = Number.parseFloat((basePrice * months * discountRate).toFixed(2))
     updateOrderData({
       duration: months,
       totalPrice,
@@ -55,9 +63,10 @@ export function DurationStep({ orderData, updateOrderData, onNext, onBack }: Dur
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {durations.map((months, index) => {
-              const totalPrice = Number.parseFloat((basePrice * months).toFixed(2))
-              const discount =
-                months >= 6 ? Math.round(((months * basePrice - totalPrice) / (months * basePrice)) * 100) : 0
+              const discountRate = getDiscountRate(months)
+              const originalPrice = basePrice * months
+              const totalPrice = Number.parseFloat((originalPrice * discountRate).toFixed(2))
+              const discount = Math.round(((originalPrice - totalPrice) / originalPrice) * 100)
 
               return (
                 <motion.div
@@ -75,7 +84,7 @@ export function DurationStep({ orderData, updateOrderData, onNext, onBack }: Dur
                     )}
                     onClick={() => handleSelectDuration(months)}
                   >
-                    {months >= 6 && (
+                    {discount > 0 && (
                       <motion.div
                         initial={{ scale: 0, rotate: -180 }}
                         animate={{ scale: 1, rotate: 0 }}
@@ -83,7 +92,7 @@ export function DurationStep({ orderData, updateOrderData, onNext, onBack }: Dur
                         className="absolute -top-2 -right-2"
                       >
                         <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-semibold text-accent-foreground">
-                          优惠
+                          {discount}% 优惠
                         </span>
                       </motion.div>
                     )}
@@ -93,7 +102,11 @@ export function DurationStep({ orderData, updateOrderData, onNext, onBack }: Dur
                       <div className="text-sm text-muted-foreground">个月</div>
                       <div className="pt-2 border-t border-border">
                         <div className="text-lg font-semibold text-foreground">¥{totalPrice.toFixed(2)}</div>
-                        {discount > 0 && <div className="text-xs text-accent">省 {discount}%</div>}
+                        {discount > 0 && (
+                          <div className="text-xs text-accent">
+                            原价 ¥{originalPrice.toFixed(2)} 省 ¥{(originalPrice - totalPrice).toFixed(2)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </Card>
@@ -110,10 +123,10 @@ export function DurationStep({ orderData, updateOrderData, onNext, onBack }: Dur
           >
             <h4 className="font-semibold text-foreground mb-2">价格说明</h4>
             <ul className="space-y-1 text-sm text-muted-foreground">
-              <li>• 1个月：标准价格</li>
-              <li>• 3个月：标准价格</li>
-              <li>• 6个月及以上：享受优惠折扣</li>
-              <li>• 授权码在有效期内可随时使用</li>
+              <li>• 1个月：¥{basePrice.toFixed(2)}（标准价格）</li>
+              <li>• 3个月：¥{(basePrice * 3).toFixed(2)}（标准价格）</li>
+              <li>• 6个月：¥{(basePrice * 6 * 0.95).toFixed(2)}（95折，省 ¥{(basePrice * 6 * 0.05).toFixed(2)}）</li>
+              <li>• 12个月：¥{(basePrice * 12 * 0.9).toFixed(2)}（9折，省 ¥{(basePrice * 12 * 0.1).toFixed(2)}）</li>
             </ul>
           </motion.div>
 
