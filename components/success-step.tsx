@@ -1,9 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Check, Copy, Download, Mail } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Check, Copy, Download, Mail, Users, X } from "lucide-react"
 import type { OrderData } from "@/app/purchase/page"
 import { motion } from "framer-motion"
 
@@ -18,6 +20,7 @@ interface SuccessStepProps {
 
 export function SuccessStep({ orderData, authCode }: SuccessStepProps) {
   const [copied, setCopied] = useState(false)
+  const [showQrCode, setShowQrCode] = useState(false)
 
   const handleCopy = async () => {
     try {
@@ -174,11 +177,51 @@ export function SuccessStep({ orderData, authCode }: SuccessStepProps) {
               <h4 className="font-semibold text-foreground mb-2">使用说明</h4>
               <ul className="space-y-1 text-sm text-muted-foreground">
                 <li>• 请妥善保管您的授权码，不要泄露给他人</li>
-                <li>• 授权码在有效期内可随时激活使用</li>
+                <li>• 授权码在有效期内可随时在插件中激活使用</li>
                 <li>• 激活后即可绑定相应数量的小红书账号</li>
-                <li>• 如遇问题请联系客服：support@example.com</li>
+                <li className="flex items-center gap-1">
+                  • 如遇到购买问题或使用问题
+                  <button
+                    onClick={() => setShowQrCode(true)}
+                    className="inline-flex items-center gap-1 text-accent hover:underline font-medium transition-all"
+                  >
+                    <Users className="h-4 w-4" />
+                    点击此处加群
+                  </button>
+                </li>
               </ul>
             </motion.div>
+
+            {/* 群二维码弹窗 */}
+            <Dialog open={showQrCode} onOpenChange={setShowQrCode}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    加入客服群
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Image
+                      src="/Wechat_qunliao.jpg"
+                      alt="微信群二维码"
+                      width={280}
+                      height={280}
+                      className="rounded-lg border-2 border-border"
+                    />
+                  </motion.div>
+                  <div className="text-center space-y-2">
+                    <p className="text-sm font-medium text-foreground">使用微信扫描二维码</p>
+                    <p className="text-xs text-muted-foreground">加入客服群获得实时支持</p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             <motion.div
               initial={{ opacity: 0, y: 10 }}

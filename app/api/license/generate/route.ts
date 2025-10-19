@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { LICENSE_API } from '@/lib/config'
 
 interface GenerateLicenseRequest {
   licenseType: string
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // 调用实际的后端接口
     const backendResponse = await fetch(
-      'https://oyosyatukogk.sealoshzh.site/api/license/generate',
+      LICENSE_API.generateBackend,
       {
         method: 'POST',
         headers: {

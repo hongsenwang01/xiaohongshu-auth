@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import type { OrderData, PaymentMethod } from "@/app/purchase/page"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import { WECHAT_PAY_API, LICENSE_API } from "@/lib/config"
 
 interface PaymentStepProps {
   orderData: OrderData
@@ -90,7 +91,7 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
 
   const pollPaymentStatus = async (tradeNo: string) => {
     try {
-      const response = await fetch(`https://oyosyatukogk.sealoshzh.site/api/wechat/pay/query?outTradeNo=${tradeNo}`)
+      const response = await fetch(`${WECHAT_PAY_API.query}?outTradeNo=${tradeNo}`)
 
       if (!response.ok) {
         console.error("Payment query failed:", response.statusText)
@@ -111,7 +112,7 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
           }
           
           const licenseType = licenseTypeMap[orderData.licenseType as keyof typeof licenseTypeMap]
-          const generateResponse = await fetch("/api/license/generate", {
+          const generateResponse = await fetch(LICENSE_API.generate, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -203,7 +204,7 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
         const description = `${licenseNames[orderData.licenseType!]} - ${orderData.duration}个月`
         const amount = orderData.totalPrice * 100 // 转换为分
 
-        const response = await fetch("https://oyosyatukogk.sealoshzh.site/api/wechat/pay/native", {
+        const response = await fetch(`${WECHAT_PAY_API.native}`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -252,7 +253,7 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
       // 如果有订单号，调用取消订单接口
       if (outTradeNo) {
         
-        const cancelUrl = `https://oyosyatukogk.sealoshzh.site/api/wechat/pay/cancel?outTradeNo=${encodeURIComponent(outTradeNo)}`
+        const cancelUrl = `${WECHAT_PAY_API.cancel}?outTradeNo=${encodeURIComponent(outTradeNo)}`
 
         
         const cancelResponse = await fetch(cancelUrl, {
