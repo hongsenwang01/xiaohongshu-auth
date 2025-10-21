@@ -63,7 +63,13 @@ export default function Home() {
                     <p className="text-lg text-muted-foreground/80">安全可靠 · 即时生效 · 多账号管理</p>
                   </div>
 
-                  <div className="pt-4">
+                  <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Link href="/download">
+                      <Button size="lg" variant="outline" className="group gap-2 text-base bg-transparent">
+                        获取小红书插件
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </Button>
+                    </Link>
                     <Link href="/purchase">
                       <Button size="lg" className="group gap-2 text-base">
                         立即获取授权码
