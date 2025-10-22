@@ -2,11 +2,16 @@
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Download, Chrome, ArrowLeft, FolderArchive, FileText } from "lucide-react"
+import { Download, Chrome, ArrowLeft, FolderArchive, FileText, Users } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import Image from "next/image"
+import { useState } from "react"
+import { AnimatePresence } from "framer-motion"
 
 export default function DownloadPage() {
+  const [showQRCode, setShowQRCode] = useState(false)
+
   const handleDownload = () => {
     // 下载插件文件
     const link = document.createElement('a')
@@ -94,9 +99,23 @@ export default function DownloadPage() {
               >
                 <Card className="p-8">
                   <div className="space-y-6">
-                    {/* 文件夹图标 */}
-                    <div className="flex items-center justify-center py-4">
-                      <FolderArchive className="h-24 w-24 text-muted-foreground/60" />
+                    {/* 文件夹图标和说明 */}
+                    <div className="flex gap-6 items-start">
+                      <div className="flex-shrink-0">
+                        <FolderArchive className="h-20 w-20 text-muted-foreground/40 mt-1" />
+                      </div>
+                      <div className="flex-1 flex flex-col justify-center">
+                        <h3 className="font-semibold text-base text-foreground mb-2">
+                          3 天免费体验
+                        </h3>
+                        <p className="text-sm text-muted-foreground/80 leading-relaxed">
+                          下载并安装插件后，登录小红书账号即可激活。享受 3 天完整功能体验，体验期结束后需
+                          <Link href="/purchase" className="text-accent hover:underline mx-1">
+                            获取授权码
+                          </Link>
+                          以继续使用。
+                        </p>
+                      </div>
                     </div>
 
                     <div className="h-px bg-border" />
@@ -131,28 +150,104 @@ export default function DownloadPage() {
                           }}
                         >
                           <FileText className="h-5 w-5" />
-                          帮助文档
+                          安装指南
                         </Button>
                       </motion.div>
                     </div>
+
+                    {/* 微信群聊入口 */}
+                    <div 
+                      className="relative"
+                      onMouseEnter={() => setShowQRCode(true)}
+                      onMouseLeave={() => setShowQRCode(false)}
+                    >
+                      <motion.button
+                        className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-lg border border-dashed border-muted-foreground/30 hover:border-accent/50 hover:bg-accent/5 transition-all duration-200"
+                      >
+                        <Users className="h-4 w-4 text-accent" />
+                        <span className="text-sm text-foreground">进入群聊获取支持</span>
+                      </motion.button>
+
+                      {/* 背景模糊遮罩 - 全屏覆盖 */}
+                      <AnimatePresence>
+                        {showQRCode && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="fixed inset-0 backdrop-blur-md bg-black/30 z-40"
+                            style={{ backdropFilter: 'blur(4px)' }}
+                            onClick={() => setShowQRCode(false)}
+                            onMouseEnter={() => setShowQRCode(true)}
+                          />
+                        )}
+                      </AnimatePresence>
+
+                      {/* 二维码卡片 */}
+                      <AnimatePresence>
+                        {showQRCode && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute bottom-full mb-3 left-1/2 transform -translate-x-1/2 z-50 w-96"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Card className="p-4 shadow-xl border-accent/20 bg-background">
+                              <div className="flex gap-4">
+                                {/* 二维码 */}
+                                <div className="flex-shrink-0">
+                                  <div className="relative w-46 h-46 bg-muted rounded-lg overflow-hidden border border-border">
+                                    <Image
+                                      src="/Wechat_qunliao.jpg"
+                                      alt="微信群聊二维码"
+                                      fill
+                                      className="object-cover"
+                                      priority
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* 说明文字 */}
+                                <div className="flex-1 flex flex-col justify-between py-1">
+                                  <div>
+                                    <h4 className="font-semibold text-sm text-foreground mb-2">
+                                      前期体验用户群
+                                    </h4>
+                                    <ul className="space-y-2">
+                                      <li className="flex items-start gap-2 text-xs text-muted-foreground">
+                                        <span className="text-accent mt-1">•</span>
+                                        <span>体验期间问题答疑</span>
+                                      </li>
+                                      <li className="flex items-start gap-2 text-xs text-muted-foreground">
+                                        <span className="text-accent mt-1">•</span>
+                                        <span>可视情况发放体验码</span>
+                                      </li>
+                                      <li className="flex items-start gap-2 text-xs text-muted-foreground">
+                                        <span className="text-accent mt-1">•</span>
+                                        <span>最新功能及更新提醒</span>
+                                      </li>
+                                      <li className="flex items-start gap-2 text-xs text-muted-foreground">
+                                        <span className="text-accent mt-1">•</span>
+                                        <span>活动通知及优惠信息</span>
+                                      </li>
+                                      <li className="flex items-start gap-2 text-xs text-muted-foreground">
+                                        <span className="text-accent mt-1">•</span>
+                                        <span>快速响应新需求反馈</span>
+                                      </li>
+                                    </ul>
+                                  </div>
+                                </div>
+                              </div>
+                            </Card>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </Card>
-              </motion.div>
-
-              {/* 底部提示 */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="text-center text-sm text-muted-foreground/60"
-              >
-                <p>
-                  下载插件后，需要
-                  <Link href="/purchase" className="text-accent hover:underline mx-1">
-                    获取授权码
-                  </Link>
-                  才能使用全部功能
-                </p>
               </motion.div>
             </motion.div>
           </div>
