@@ -197,8 +197,8 @@ export function PaymentStep({ orderData, updateOrderData, onNext, onBack, setAut
       // 只有微信支付调用接口，支付宝暂时使用模拟
       if (orderData.paymentMethod === "wechat") {
         const licenseNames = {
-          standard: "普通授权码",
-          premium: "高级授权码",
+          standard: "普通授权码(活动价)",
+          premium: "高级授权码(活动价)",
         }
 
         const description = `${licenseNames[orderData.licenseType!]} - ${orderData.duration}个月`

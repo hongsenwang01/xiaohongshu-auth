@@ -12,8 +12,8 @@ const licenseNames = {
 }
 
 const licensePrices = {
-  standard: 15,
-  premium: 25,
+  standard: 29,
+  premium: 50,
 }
 
 export function OrderSummary({ orderData, currentStep }: OrderSummaryProps) {
@@ -57,6 +57,12 @@ export function OrderSummary({ orderData, currentStep }: OrderSummaryProps) {
           <div className="flex justify-between">
             <span className="font-semibold text-foreground">总计</span>
             <span className="text-2xl font-bold text-foreground">¥{orderData.totalPrice.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-border">
+          <div className="text-xs text-accent font-medium bg-accent/10 rounded p-2">
+            限时活动价（2个月），之后恢复原价
           </div>
         </div>
       </div>

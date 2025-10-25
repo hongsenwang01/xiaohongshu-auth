@@ -19,7 +19,8 @@ const licenseTypes = [
     name: "普通授权码",
     description: "适合个人用户或小型团队使用",
     accounts: 3,
-    price: 15,
+    price: 29,
+    originalPrice: 35,
     features: ["同时绑定3个小红书账号", "数据分析功能", "每月更新维护"],
     popular: true,
   },
@@ -28,7 +29,8 @@ const licenseTypes = [
     name: "高级授权码",
     description: "适合专业用户或中大型团队",
     accounts: 10,
-    price: 25,
+    price: 50,
+    originalPrice: 60,
     features: ["同时绑定10个小红书账号", "数据分析功能", "优先客户支持"],
   },
 ]
@@ -98,9 +100,19 @@ export function LicenseTypeStep({ orderData, updateOrderData, onNext }: LicenseT
                   <p className="mt-1 text-sm text-muted-foreground">{license.description}</p>
                 </div>
 
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-foreground">¥{license.price}</span>
-                  <span className="text-muted-foreground">/月</span>
+                <div className="space-y-1">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-foreground">¥{license.price}</span>
+                    <span className="text-muted-foreground">/月</span>
+                    {license.originalPrice && (
+                      <span className="text-sm text-muted-foreground line-through">¥{license.originalPrice}</span>
+                    )}
+                  </div>
+                  {license.originalPrice && (
+                    <div className="text-xs text-accent font-medium">
+                      限时优惠 省¥{license.originalPrice - license.price}/月
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">

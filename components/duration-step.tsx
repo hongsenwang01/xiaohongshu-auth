@@ -14,25 +14,40 @@ interface DurationStepProps {
   onBack: () => void
 }
 
-const durations = [1, 3, 6, 12]
+const durations = [1, 3, 6]
 
-const licensePrices = {
-  standard: 15,
-  premium: 25,
+// 原价配置
+const originalPrices = {
+  standard: {
+    1: 35,
+    3: 105,
+    6: 220,
+  },
+  premium: {
+    1: 60,
+    3: 180,
+    6: 360,
+  },
 }
 
-// 计算折扣系数
-const getDiscountRate = (months: number): number => {
-  if (months === 6) return 0.95 // 6个月95折
-  if (months === 12) return 0.9 // 12个月9折
-  return 1.0 // 无折扣
+// 活动价配置
+const currentPrices = {
+  standard: {
+    1: 0.1,
+    3: 80,
+    6: 165,
+  },
+  premium: {
+    1: 50,
+    3: 135,
+    6: 270,
+  },
 }
 
 export function DurationStep({ orderData, updateOrderData, onNext, onBack }: DurationStepProps) {
   const handleSelectDuration = (months: number) => {
-    const basePrice = orderData.licenseType ? licensePrices[orderData.licenseType] : 0
-    const discountRate = getDiscountRate(months)
-    const totalPrice = Number.parseFloat((basePrice * months * discountRate).toFixed(2))
+    if (!orderData.licenseType) return
+    const totalPrice = currentPrices[orderData.licenseType][months as keyof typeof currentPrices.standard]
     updateOrderData({
       duration: months,
       totalPrice,
@@ -45,8 +60,6 @@ export function DurationStep({ orderData, updateOrderData, onNext, onBack }: Dur
     }
   }
 
-  const basePrice = orderData.licenseType ? licensePrices[orderData.licenseType] : 0
-
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -56,16 +69,16 @@ export function DurationStep({ orderData, updateOrderData, onNext, onBack }: Dur
           </span>
           <h2 className="text-2xl font-bold text-foreground">选择授权码期限</h2>
         </div>
-        <p className="pl-11 text-muted-foreground">选择授权码的有效期限，最长可选择12个月</p>
+        <p className="pl-11 text-muted-foreground">选择授权码的有效期限，最长可选择6个月</p>
       </div>
 
       <Card className="p-6">
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-3 gap-4">
             {durations.map((months, index) => {
-              const discountRate = getDiscountRate(months)
-              const originalPrice = basePrice * months
-              const totalPrice = Number.parseFloat((originalPrice * discountRate).toFixed(2))
+              if (!orderData.licenseType) return null
+              const originalPrice = originalPrices[orderData.licenseType][months as keyof typeof originalPrices.standard]
+              const totalPrice = currentPrices[orderData.licenseType][months as keyof typeof currentPrices.standard]
               const discount = Math.round(((originalPrice - totalPrice) / originalPrice) * 100)
 
               return (
@@ -119,15 +132,26 @@ export function DurationStep({ orderData, updateOrderData, onNext, onBack }: Dur
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="rounded-lg bg-muted p-4"
+            className="rounded-lg bg-accent/10 border border-accent/20 p-4"
           >
-            <h4 className="font-semibold text-foreground mb-2">价格说明</h4>
-            <ul className="space-y-1 text-sm text-muted-foreground">
-              <li>• 1个月：¥{basePrice.toFixed(2)}（标准价格）</li>
-              <li>• 3个月：¥{(basePrice * 3).toFixed(2)}（标准价格）</li>
-              <li>• 6个月：¥{(basePrice * 6 * 0.95).toFixed(2)}（95折，省 ¥{(basePrice * 6 * 0.05).toFixed(2)}）</li>
-              <li>• 12个月：¥{(basePrice * 12 * 0.9).toFixed(2)}（9折，省 ¥{(basePrice * 12 * 0.1).toFixed(2)}）</li>
-            </ul>
+            <div className="flex items-start gap-2">
+              <div className="text-sm">
+                <h4 className="font-semibold text-accent mb-2">优惠信息</h4>
+                <ul className="space-y-1 text-muted-foreground">
+                  {orderData.licenseType && durations.map((months) => {
+                    const originalPrice = originalPrices[orderData.licenseType!][months as keyof typeof originalPrices.standard]
+                    const totalPrice = currentPrices[orderData.licenseType!][months as keyof typeof currentPrices.standard]
+                    const saved = originalPrice - totalPrice
+                    const discount = Math.round((saved / originalPrice) * 100)
+                    return (
+                      <li key={months}>
+                        • {months}个月：¥{totalPrice} <span className="line-through text-xs">¥{originalPrice}</span> ({discount}%折扣，省 ¥{saved})
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            </div>
           </motion.div>
 
           <motion.div
