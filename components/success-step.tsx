@@ -1,13 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Check, Copy, Download, Mail, Users, X } from "lucide-react"
+import { Check, Copy, Users } from "lucide-react"
 import type { OrderData } from "@/app/purchase/page"
 import { motion } from "framer-motion"
+import Confetti from "react-confetti"
 
 interface SuccessStepProps {
   orderData: OrderData
@@ -21,6 +22,55 @@ interface SuccessStepProps {
 export function SuccessStep({ orderData, authCode }: SuccessStepProps) {
   const [copied, setCopied] = useState(false)
   const [showQrCode, setShowQrCode] = useState(false)
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 })
+  const [showConfetti, setShowConfetti] = useState(true)
+  const iconRef = useRef<HTMLDivElement>(null)
+
+  // 获取窗口尺寸和礼花起始位置
+  useEffect(() => {
+    const updateWindowSize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      })
+    }
+
+    // 初始化
+    updateWindowSize()
+
+    // 监听窗口大小变化
+    window.addEventListener("resize", updateWindowSize)
+
+    // 6秒后停止礼花效果（给足够时间让礼花自然下落）
+    const timer = setTimeout(() => {
+      setShowConfetti(false)
+    }, 6000)
+
+    return () => {
+      window.removeEventListener("resize", updateWindowSize)
+      clearTimeout(timer)
+    }
+  }, [])
+
+  // 获取成功图标的中心位置
+  const getIconPosition = () => {
+    if (iconRef.current) {
+      const rect = iconRef.current.getBoundingClientRect()
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        w: rect.width,
+        h: rect.height,
+      }
+    }
+    // 默认位置（居中）
+    return {
+      x: windowSize.width / 2,
+      y: 150,
+      w: 64,
+      h: 64,
+    }
+  }
 
   const handleCopy = async () => {
     try {
@@ -32,40 +82,6 @@ export function SuccessStep({ orderData, authCode }: SuccessStepProps) {
     }
   }
 
-  const handleDownload = () => {
-    const licenseNames = {
-      standard: "普通授权码",
-      premium: "高级授权码",
-    }
-
-    const content = `
-小红书授权码购买凭证
-===================
-
-授权码: ${authCode}
-类型: ${orderData.licenseType ? licenseNames[orderData.licenseType as keyof typeof licenseNames] : "-"}
-有效期: ${orderData.duration} 个月
-购买日期: ${new Date().toLocaleDateString("zh-CN")}
-支付金额: ¥${orderData.totalPrice}
-
-使用说明:
-1. 请妥善保管您的授权码
-2. 授权码在有效期内可随时激活使用
-3. 如有问题请联系客服
-
-感谢您的购买！
-    `.trim()
-
-    const blob = new Blob([content], { type: "text/plain" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `授权码-${authCode}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }
 
   const licenseNames = {
     standard: "普通授权码",
@@ -78,21 +94,39 @@ export function SuccessStep({ orderData, authCode }: SuccessStepProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* 礼花效果 - 从成功图标位置爆炸 */}
+      {showConfetti && windowSize.width > 0 && (
+        <Confetti
+          key={0}
+          width={windowSize.width}
+          height={windowSize.height}
+          recycle={false}
+          numberOfPieces={400}
+          gravity={0.2}
+          initialVelocityX={15}
+          initialVelocityY={40}
+          tweenDuration={100}
+          confettiSource={getIconPosition()}
+        />
+      )}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, type: "spring", stiffness: 200 }}
         className="text-center space-y-4"
       >
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-          className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-accent"
-        >
-          <Check className="h-8 w-8 text-accent-foreground" />
-        </motion.div>
+        <div className="relative">
+          <motion.div
+            ref={iconRef}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-accent"
+          >
+            <Check className="h-8 w-8 text-accent-foreground" />
+          </motion.div>
+        </div>
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -223,33 +257,14 @@ export function SuccessStep({ orderData, authCode }: SuccessStepProps) {
               </DialogContent>
             </Dialog>
 
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="flex gap-3"
-            >
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
-                <Button onClick={handleDownload} variant="outline" className="w-full bg-transparent">
-                  <Download className="mr-2 h-4 w-4" />
-                  下载凭证
-                </Button>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1">
-                <Button variant="outline" className="w-full bg-transparent">
-                  <Mail className="mr-2 h-4 w-4" />
-                  发送到邮箱
-                </Button>
-              </motion.div>
-            </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
+              transition={{ delay: 0.9 }}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="flex gap-3"
+              className="flex gap-3"  
             >
               <Button onClick={() => window.location.reload()} className="w-full" size="lg">
                 购买新的授权码
