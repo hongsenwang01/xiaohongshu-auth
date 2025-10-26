@@ -33,7 +33,7 @@ const originalPrices = {
 // 活动价配置
 const currentPrices = {
   standard: {
-    1: 0.1,
+    1: 29,
     3: 80,
     6: 165,
   },
