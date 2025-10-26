@@ -34,7 +34,7 @@ const originalPrices = {
 const currentPrices = {
   standard: {
     1: 29,
-    3: 80,
+    3: 85,
     6: 165,
   },
   premium: {
