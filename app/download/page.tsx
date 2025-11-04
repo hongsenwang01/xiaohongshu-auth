@@ -8,18 +8,14 @@ import { motion } from "framer-motion"
 import Image from "next/image"
 import { useState } from "react"
 import { AnimatePresence } from "framer-motion"
+import { PLUGIN_API } from "@/lib/config"
 
 export default function DownloadPage() {
   const [showQRCode, setShowQRCode] = useState(false)
 
   const handleDownload = () => {
-    // 下载插件文件
-    const link = document.createElement('a')
-    link.href = '/downloads/chrome-extension.zip'
-    link.download = 'chrome-extension.zip'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    // 通过后端接口下载插件文件
+    window.open(PLUGIN_API.download, '_blank')
   }
 
   return (

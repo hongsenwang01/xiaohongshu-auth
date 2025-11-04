@@ -24,5 +24,11 @@ export const LICENSE_API = {
   generateBackend: `${API_BASE_URL}/api/license/generate`,
 }
 
+// 插件相关接口
+export const PLUGIN_API = {
+  // 下载插件
+  download: `${API_BASE_URL}/api/plugin/download`,
+}
+
 // 其他配置
 export const API_TOKEN = process.env.LICENSE_API_TOKEN || ''
